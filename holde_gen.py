@@ -80,9 +80,11 @@ class Holde():
         self.draw.multiline_text((self.width*0.85,800), "Соседи: \n" +  neigbours_list, spacing=6, font= self.regular_fnt,fill=(0,0,0,255), align='right', anchor="rs")
  
     def renderCorrupt(self):
-        self.draw.multiline_text((self.width*0.15,800), "Влияние : \n" +  "\n".join([f"{l}: {c} %" for l,c in zip(location_list, self.corrupt)]), font= self.regular_fnt,fill=(0,0,0,255), align='left', anchor="ls")
+        self.draw.multiline_text((self.width*0.15,800), "Влияние : \n" +  "\n".join([f"{l}:    {c} %" for l,c in zip(location_list, self.corrupt)]), font= self.regular_fnt,fill=(0,0,0,255), align='left', anchor="ls")
  
-
+    def renderLabel(self):
+        self.draw.text((self.width*0.85,200), str(self.label) , font=self.header_font,fill=(0,0,0,255), align='right', anchor="rs")
+    
 
 
     def renderToFile(self, filename = ""):
@@ -96,6 +98,7 @@ class Holde():
         self.renderHeader()
         self.renderNeighs()
         self.renderCorrupt()
+        self.renderLabel()
 
         with open(filename, "wb") as res:
             self.im.save(res, "JPEG")
@@ -119,7 +122,7 @@ def main():
     holde = Holde("Раменское",3,["Жуковский", "Бронницы"],[20,-30,40,10],"Шахта")
     holdef=  holde.renderToFile()
 
-    #saveFileToGD("result.jpg")
+    saveFileToGD(holdef)
 
 
 # if __name__ == 'main':
