@@ -5,11 +5,15 @@ import pprint
 import io
 import sys
 
+import gspread
+
 from PIL import Image, ImageDraw, ImageFont
+import time
+import random
 
 
 pp = pprint.PrettyPrinter(indent=4)
-SCOPES = ['https://www.googleapis.com/auth/drive']
+SCOPES = ['https://www.googleapis.com/auth/drive',  'https://www.googleapis.com/auth/spreadsheets']
 SERVICE_ACCOUNT_FILE = 'client_secret.json'
 
 credentials = service_account.Credentials.from_service_account_file(
@@ -56,6 +60,7 @@ def saveFileToGD(filename):
 location_list = ["Вольные", "Актлан", "Порт-Фаро", "Новый Уотердип" ]
 
 
+
 class Holde():
     def __init__(self, name, num, neighbours, corrupt, label):
         self.name = name 
@@ -77,10 +82,10 @@ class Holde():
     
     def renderNeighs(self):
         neigbours_list   =  "\n".join(self.neighbours)
-        self.draw.multiline_text((self.width*0.85,800), "Соседи: \n" +  neigbours_list, spacing=6, font= self.regular_fnt,fill=(0,0,0,255), align='right', anchor="rs")
+        self.draw.multiline_text((self.width*0.85,700), "Соседи: \n" +  neigbours_list, spacing=6, font= self.regular_fnt,fill=(0,0,0,255), align='right', anchor="rs")
  
     def renderCorrupt(self):
-        self.draw.multiline_text((self.width*0.15,800), "Влияние : \n" +  "\n".join([f"{l}:    {c} %" for l,c in zip(location_list, self.corrupt)]), font= self.regular_fnt,fill=(0,0,0,255), align='left', anchor="ls")
+        self.draw.multiline_text((self.width*0.15,700), "Влияние : \n" +  "\n".join([f"{l}:    {c} %" for l,c in zip(location_list, self.corrupt)]), font= self.regular_fnt,fill=(0,0,0,255), align='left', anchor="ls")
  
     def renderLabel(self):
         self.draw.text((self.width*0.85,200), str(self.label) , font=self.header_font,fill=(0,0,0,255), align='right', anchor="rs")
@@ -104,9 +109,101 @@ class Holde():
             self.im.save(res, "JPEG")
         return filename
 
+gc = gspread.authorize(credentials)
+sh = gc.open('HoldeTest')    
+
+def get_settings():
+    sheet = sh.worksheet('Settings')
+    rows =  sheet.get_all_values()
+    settings = {}
+    for row in rows :
+        if row[0]:
+            if row[0] != 'Locations' and row[0] != 'Main Holde' :
+                settings[str(row[0])] = row[1] 
+            else:
+                settings[str(row[0])] = row[1:]
+    return settings
+
+settings = get_settings()
+corrupts = {}
+
+
+def fillCorrupt(force = False):
+    #add shhet for each locations if it not exist
+
+    locs  = settings.get('Locations')
+    
+    sizeX, sizeY = int(settings.get("WorldSizeX",12)),int(settings.get("WorldSizeY",12))
+    
+    for loc in locs:
+        try:
+            worksheet = sh.add_worksheet(
+                title=loc, 
+                rows=settings.get("WorldSizeX",12), 
+                cols=settings.get("WorldSizeY",12)
+            )
+        except Exception as e:
+            print("Sheet exist", e)
+
+    loc_sheets = [sh.worksheet(loc) for loc in locs]
+    main_holdes = settings.get('Main Holde')
+
+    max_holde_val = 180
+
+    for m, lsh in zip(main_holdes, loc_sheets) :
+        corrupts[lsh.title] = lsh.get_all_values()
+        if not force and corrupts[lsh.title][0][0]:
+           continue
+        if lsh.title == "Вольные":
+            corrs = []
+            for x in range(1,sizeX+1):
+                corr = []
+                for y in range(1,sizeY+1):
+                    dx,dy = abs(x-mx),abs(y-my)
+                    dist = max (dx,dy)
+                    val = max_holde_val - dist*20
+                    corr.append(val)
+                random.shuffle(corr)
+                corrs.append(corr)
+            random.shuffle(corrs)
+            corrupts[lsh.title] = corrs
+            for x in range(1,sizeX+1):
+                for y in range(1,sizeY+1):
+                    lsh.update_cell(x,y,corrs[y][x])
+                    time.sleep(1)            
+            continue
+
+        # corrupts[lsh.title] = lsh.get_all_values()
+        # if not force and corrupts[lsh.title][0][0]:
+        #    continue
+        mx,my = map(int,m.split(","))
+        for x in range(1,sizeX+1):
+            for y in range(1,sizeY+1):
+                dx,dy = abs(x-mx),abs(y-my)
+                dist = max (dx,dy)
+                val = max_holde_val - dist*20
+                lsh.update_cell(x,y,val)
+                time.sleep(1)
+                print("x,y = ",  x,y, val, end= "")
+            print()
+        corrupts[lsh.title] = lsh.get_all_values()  
+
+
+
+        
+
+
+
+
+
+
+    
+
 
 def main():
  #   getTemplate()
+    pp.pprint(settings)
+    fillCorrupt()
     im = Image.open("template.jpg")
     pp.pprint(im)
     #size=2560x1777
@@ -129,3 +226,5 @@ def main():
 #     main()
 
 main()
+
+
