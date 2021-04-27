@@ -50,7 +50,11 @@ def saveFileToGD(filename):
                 }
     media = MediaFileUpload(file_path, resumable=True)
     r = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
     pp.pprint(r)
+
+location_list = ["Вольные", "Актлан", "Порт-Фаро", "Новый Уотердип" ]
+
 
 class Holde():
     def __init__(self, name, num, neighbours, corrupt, label):
@@ -60,38 +64,41 @@ class Holde():
         self.corrupt = corrupt
         self.label =  label
         self.im = Image.open("template.jpg")
-        self.draw = ImageDraw.Draw(im)
-        self.header_font = ImageFont.truetype("20351.otf", 120)
-        self.name_font = ImageFont.truetype("20351.otf", 100)
-        self.regular_fnt = ImageFont.truetype("20351.otf", 80)
+        self.draw = ImageDraw.Draw(self.im)
+        self.header_font = ImageFont.truetype("18700.ttf", 100)
+        self.name_font = ImageFont.truetype("18700.ttf", 130)
+        self.regular_fnt = ImageFont.truetype("18700.ttf", 80)
         self.width = 2560
         self.height = 1777
 
     def renderHeader(self):
-        self.draw.text((width/2,100), "Поместье " + str(self.num) , font=self.header_font,fill=(0,0,0,255), align='center', anchor="ms")
-        self.draw.text((width/2,100), str(self.name) , font=self.name_font,fill=(0,0,0,255), align='center', anchor="ms")
+        self.draw.text((self.width/2,300), "Поместье  " + str(self.num) , font=self.header_font,fill=(0,0,0,255), align='center', anchor="ms")
+        self.draw.text((self.width/2,450), str(self.name) , font=self.name_font,fill=(0,0,0,255), align='center', anchor="ms")
     
     def renderNeighs(self):
         neigbours_list   =  "\n".join(self.neighbours)
-        self.draw.multiline_text((width//4,100), "Соседи: \n" +  neigbours_list, font= self.regular_fnt,fill=(0,0,0,255), align='center', anchor="ms")
+        self.draw.multiline_text((self.width*0.85,800), "Соседи: \n" +  neigbours_list, spacing=6, font= self.regular_fnt,fill=(0,0,0,255), align='right', anchor="rs")
  
     def renderCorrupt(self):
-        self.draw.multiline_text((width//4,100), "Влияние локации: \n" +  "\n".join(self.corrupt), font= self.regular_fnt,fill=(0,0,0,255), align='center', anchor="ms")
+        self.draw.multiline_text((self.width*0.15,800), "Влияние : \n" +  "\n".join([f"{l}: {c} %" for l,c in zip(location_list, self.corrupt)]), font= self.regular_fnt,fill=(0,0,0,255), align='left', anchor="ls")
  
 
 
 
     def renderToFile(self, filename = ""):
-        if not name:
-            filename = self.name + ".jpg"
-        im = Image.open("template.jpg")
+        if not filename:
+            filename = str(self.num) +"_" + self.name + ".jpg"
+ 
         
         #draw = ImageDraw.Draw(im)
-        fnt = ImageFont.truetype("20351.otf", 120)
-        draw.text((100,100), "Поместье", font=fnt, fill=(255,255,255,255))
+        # fnt = ImageFont.truetype("20351.otf", 120)
+        # draw.text((100,100), "Поместье", font=fnt, fill=(255,255,255,255))
+        self.renderHeader()
+        self.renderNeighs()
+        self.renderCorrupt()
 
         with open(filename, "wb") as res:
-            im.save(res, "JPEG")
+            self.im.save(res, "JPEG")
         return filename
 
 
@@ -109,7 +116,10 @@ def main():
     with open("result.jpg", "wb") as res:
         im.save(res, "JPEG")
 
-#    saveFileToGD("result.jpg")
+    holde = Holde("Раменское",3,["Жуковский", "Бронницы"],[20,-30,40,10],"Шахта")
+    holdef=  holde.renderToFile()
+
+    #saveFileToGD("result.jpg")
 
 
 # if __name__ == 'main':
