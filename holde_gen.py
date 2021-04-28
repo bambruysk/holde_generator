@@ -126,6 +126,8 @@ def get_settings():
 
 settings = get_settings()
 corrupts = {}
+holdes = {}
+
 
 
 def fillCorrupt(force = False):
@@ -152,9 +154,10 @@ def fillCorrupt(force = False):
 
     for m, lsh in zip(main_holdes, loc_sheets) :
         corrupts[lsh.title] = lsh.get_all_values()
-        if not force and corrupts[lsh.title][0][0]:
+        if not force and corrupts[lsh.title]:
            continue
         if lsh.title == "Вольные":
+            mx,my = map(int,m.split(","))
             corrs = []
             for x in range(1,sizeX+1):
                 corr = []
@@ -169,7 +172,7 @@ def fillCorrupt(force = False):
             corrupts[lsh.title] = corrs
             for x in range(1,sizeX+1):
                 for y in range(1,sizeY+1):
-                    lsh.update_cell(x,y,corrs[y][x])
+                    lsh.update_cell(x,y,corrs[y-1][x-1])
                     time.sleep(1)            
             continue
 
@@ -190,8 +193,53 @@ def fillCorrupt(force = False):
 
 
 
-        
+def getHoldes():
+    sheet = sh.worksheet('Holdes')
+    holdes_list =  sheet.get_all_records()
+    for hold in holdes_list:
+        holdes[hold.get('ID')] = hold 
+    pp.pprint(holdes)
+    return holdes
 
+
+def getNeigbours(id):
+    res = []
+    holdesNum = int(settings.get('HoldeNums')) 
+    sizeX, sizeY = int(settings.get('WorldSizeX')), int(settings.get('WorldSizeY'))  
+    if id < 0 or id >= holdesNum : 
+        return res
+    #  0  1  2  3  4  5  6  7  8  9
+    if id >= sizeX :
+        res.append(id-sizeX)
+	# 90 91 92 93 94 95 96 97 98 99
+    if id < holdesNum-sizeX:  # 100 - 10 
+        res.append(id+sizeX)
+	# 00  10  20  30  40  50  60  70  80  90
+    if id%sizeX != 0 :
+        res.append( id-1)
+	# 09 19 29 39 49 59 69 79 89 99
+    if id%sizeX != sizeX-1 :    
+        res.append( id+1)
+    return res
+
+
+def uppdateNeigbours():
+    holde_sheet_header = sh.worksheet('Holdes').row_values(1)
+    pp.pprint(holde_sheet_header)
+    neigbour_col = holde_sheet_header.index('Соседи') + 1
+    holdes = getHoldes()
+    row = 2
+    for id,hol in holdes.items():
+        #id = hold.get('ID')
+        heighlist = []
+        neigh_ids = getNeigbours(int(id))
+        for nid in neigh_ids:
+            heighlist.append(holdes.get(nid).get('Name'))
+        val = hol['Coceди'] = ",".join(heighlist)
+        sh.worksheet('Holdes').update_cell(row,neigbour_col,val)
+        row += 1
+        print(val)
+        time.sleep(1)
 
 
 
@@ -203,7 +251,11 @@ def fillCorrupt(force = False):
 def main():
  #   getTemplate()
     pp.pprint(settings)
-    fillCorrupt()
+  #  fillCorrupt()
+
+    getHoldes()
+    uppdateNeigbours()
+    
     im = Image.open("template.jpg")
     pp.pprint(im)
     #size=2560x1777
