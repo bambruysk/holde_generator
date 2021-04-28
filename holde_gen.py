@@ -254,7 +254,7 @@ def main():
   #  fillCorrupt()
 
     getHoldes()
-    uppdateNeigbours()
+    #uppdateNeigbours()
     
     im = Image.open("template.jpg")
     pp.pprint(im)
