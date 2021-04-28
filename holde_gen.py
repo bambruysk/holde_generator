@@ -94,7 +94,7 @@ class Holde():
 
     def renderToFile(self, filename = ""):
         if not filename:
-            filename = str(self.num) +"_" + self.name + ".jpg"
+            filename =  str(self.num) +"_" + self.name + ".jpg"
  
         
         #draw = ImageDraw.Draw(im)
@@ -241,6 +241,16 @@ def uppdateNeigbours():
         print(val)
         time.sleep(1)
 
+# hold is dict from sheet
+def genHolde(hold):
+    id = hold.get("ID")
+    name = hold.get("Name")
+    tag = hold.get("Tags")
+    corrupt =  [hold.get("Актлан"),hold.get("Новый Уотердип"), hold.get("Порт-Фаро"), hold.get("Вольные")]
+    neighs = hold.get("Соседи").split(',')
+
+    return Holde(name=name, neighbours=neighs,corrupt=corrupt,num=id ,label= tag)
+    
 
 
 
@@ -256,22 +266,31 @@ def main():
     getHoldes()
     #uppdateNeigbours()
     
+
+
     im = Image.open("template.jpg")
-    pp.pprint(im)
-    #size=2560x1777
-    width = 2560
-    height =  1777
-    draw = ImageDraw.Draw(im)
-    fnt = ImageFont.truetype("20351.otf", 100)
-    draw.text((width/2,300), "Поместье", font=fnt, fill=(0,0,0,255), align='center', anchor="ms")
+    # pp.pprint(im)
+    # #size=2560x1777
+    # width = 2560
+    # height =  1777
+    # draw = ImageDraw.Draw(im)
+    # fnt = ImageFont.truetype("20351.otf", 100)
+    # draw.text((width/2,300), "Поместье", font=fnt, fill=(0,0,0,255), align='center', anchor="ms")
 
-    with open("result.jpg", "wb") as res:
-        im.save(res, "JPEG")
+    # with open("result.jpg", "wb") as res:
+    #     im.save(res, "JPEG")
 
-    holde = Holde("Раменское",3,["Жуковский", "Бронницы"],[20,-30,40,10],"Шахта")
-    holdef=  holde.renderToFile()
+    for hold in holdes:
+        h = genHolde(holdes[hold])
+        fn = h.renderToFile()
+        print("Render file ", h.name)
+        saveFileToGD(fn)
 
-    saveFileToGD(holdef)
+
+    # holde = Holde("Раменское",3,["Жуковский", "Бронницы"],[20,-30,40,10],"Шахта")
+    # holdef=  holde.renderToFile()
+
+    # saveFileToGD(holdef)
 
 
 # if __name__ == 'main':
